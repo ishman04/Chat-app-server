@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken'
 import StatusCodes from 'http-status-codes'
 import User from '../schemas/userSchema.js';
 import { compare } from 'bcrypt';
+import fs from 'fs/promises'
+
 
 const maxAge = 3*24*60*60*1000
 
@@ -155,6 +157,130 @@ export const getUserInfo = async (req,res,next) => {
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .json({
                     message: 'Failed to get user details',
+                    success: false,
+                    data: {},
+                    error: error.message
+                })
+    }
+}
+
+export const updateProfile = async (req,res,next) => {
+    try {
+        const {userId} = req
+        const {firstName,lastName,color} = req.body
+        console.log('First name ', firstName, " last name ",lastName)
+        if(!firstName || !lastName){
+            return res
+                    .status(StatusCodes.BAD_REQUEST)
+                    .json({
+                        message: 'First name, last name missing',
+                        success: false,
+                        data: {},
+                        error: {}
+                        })
+
+        }
+        const userData = await User.findByIdAndUpdate(userId,{
+            firstName, lastName, color, profileSetup: true
+        }, {new:true, runValidators:true});
+
+        
+        return res
+                .status(StatusCodes.OK)
+                .json({
+                    message: 'Profile updated successfully',
+                    success: true,
+                    data: {
+                        id: userData.id,
+                        email: userData.email,
+                        profileSetup: userData.profileSetup,
+                        firstName: userData.firstName,
+                        lastName: userData.lastName,
+                        image: userData.image,
+                        color: userData.color
+
+                    },
+                    error: {}
+                })
+        
+    } catch (error) {
+        console.log(error);
+        return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .json({
+                    message: 'Failed to update user profile',
+                    success: false,
+                    data: {},
+                    error: error.message
+                })
+    }
+}
+
+export const addProfileImage = async (req, res) => {
+  try {
+    const imagePath = req.file?.path;
+    const {userId} = req;
+
+    if (!imagePath) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'No file uploaded' });
+    }
+    const user = await User.findByIdAndUpdate(userId, { image: imagePath }, { new: true, runValidators:true});
+    return res
+            .status(StatusCodes.OK)
+            .json({ message: 'Profile image updated successfully',
+                success: true,
+                data: {
+                    id: user.id,
+                    email: user.email,
+                    profileSetup: user.profileSetup,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    image: user.image,
+                    color: user.color
+                }
+            })
+
+}
+    catch{
+        console.log(error);
+        return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .json({
+                    message: 'Failed to add user image',
+                    success: false,
+                    data: {},
+                    error: error.message
+                })
+
+    }
+};
+
+export const removeProfileImage = async (req,res,next) => {
+    try {
+        return res
+                .status(StatusCodes.OK)
+                .json({
+                    message: 'Profile updated successfully',
+                    success: true,
+                    data: {
+                        id: userData.id,
+                        email: userData.email,
+                        profileSetup: userData.profileSetup,
+                        firstName: userData.firstName,
+                        lastName: userData.lastName,
+                        image: userData.image,
+                        color: userData.color
+
+                    },
+                    error: {}
+                })
+        
+    } catch (error) {
+        console.log(error);
+        return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .json({
+                    message: 'Failed to update user profile',
                     success: false,
                     data: {},
                     error: error.message
