@@ -255,21 +255,28 @@ export const addProfileImage = async (req, res) => {
     }
 };
 
-export const removeProfileImage = async (req,res,next) => {
+export const removeProfileImage = async (req,res) => {
     try {
+        const {userId} = req;
+        const user = await User.findById(userId)
+        if(user.image){
+            await fs.unlink(process.cwd()+'/'+user.image);
+            user.image = null;
+            await user.save();
+        }
         return res
                 .status(StatusCodes.OK)
                 .json({
-                    message: 'Profile updated successfully',
+                    message: 'Profile photo deleted successfully',
                     success: true,
                     data: {
-                        id: userData.id,
-                        email: userData.email,
-                        profileSetup: userData.profileSetup,
-                        firstName: userData.firstName,
-                        lastName: userData.lastName,
-                        image: userData.image,
-                        color: userData.color
+                        id: user.id,
+                        email: user.email,
+                        profileSetup: user.profileSetup,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        image: user.image,
+                        color: user.color
 
                     },
                     error: {}
@@ -280,7 +287,7 @@ export const removeProfileImage = async (req,res,next) => {
         return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .json({
-                    message: 'Failed to update user profile',
+                    message: 'Failed to delete profile photo',
                     success: false,
                     data: {},
                     error: error.message
