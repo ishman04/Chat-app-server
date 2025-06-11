@@ -294,3 +294,29 @@ export const removeProfileImage = async (req,res) => {
                 })
     }
 }
+
+export const logout = async(req,res) => {
+    try {
+        res.cookie("jwt","",{maxAge:1,secure:true,sameSite:"None"})
+        res
+            .status(StatusCodes.OK)
+            .json({
+                message: 'Logged out successfully',
+                success: true,
+                data: {},
+                error: {}
+            })
+        
+    } catch (error) {
+        console.log(error)
+        res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .json({
+                message: 'Failed to logout',
+                success: false,
+                data: {},
+                error: error.message
+            })
+    }
+    
+}
