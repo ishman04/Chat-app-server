@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 import authRoutes from './routes/authRoutes.js'
 import path from 'path'
+import contactRoutes from './routes/ContactRoutes.js'
 
 dotenv.config();
 const app = express();
@@ -28,6 +29,8 @@ app.use('/api/auth',authRoutes);
 const server = app.listen(port, ()=>{
     console.log(`Server is running on port ${port}`)
 })
+
+app.use('/api/contacts',contactRoutes)
 
 mongoose
     .connect(databaseURL)
