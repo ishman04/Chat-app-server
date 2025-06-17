@@ -25,32 +25,29 @@ const setupSocket = (server) => {
 
     // Message handler
     const sendMessage = async (message) => {
-        const { sender, recipient } = message;
-        const senderSocketId = userSocketMap.get(sender);
-        const recipientSocketId = userSocketMap.get(recipient);
+  const { sender, recipient } = message;
+  const senderSocketId = userSocketMap.get(sender);
+  const recipientSocketId = userSocketMap.get(recipient);
 
-        try {
-            // Save the message
-            const createdMessage = await Message.create(message);
+  try {
+    console.log("🛠️ Creating message:", message);
+    const createdMessage = await Message.create(message);
 
-            // Populate sender and recipient data
-            const messageData = await Message.findById(createdMessage._id)
-                .populate("sender", "id email firstName lastName image color")
-                .populate("recipient", "id email firstName lastName image color");
+    const messageData = await Message.findById(createdMessage._id)
+      .populate("sender", "id email firstName lastName image color")
+      .populate("recipient", "id email firstName lastName image color");
 
-            // Emit the message to recipient (if online)
-            if (recipientSocketId) {
-                io.to(recipientSocketId).emit("receiveMessage", messageData);
-            }
-
-            // Emit to sender too (to update their chat)
-            if (senderSocketId) {
-                io.to(senderSocketId).emit("receiveMessage", messageData);
-            }
-        } catch (err) {
-            console.error("Error sending message:", err);
-        }
-    };
+    console.log("📨 Emitting message to sender and recipient");
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit("receiveMessage", messageData);
+    }
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("receiveMessage", messageData);
+    }
+  } catch (err) {
+    console.error("❌ Error sending message:", err);
+  }
+};
 
     // When a user connects
     io.on("connection", (socket) => {

@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js'
 import path from 'path'
 import contactRoutes from './routes/ContactRoutes.js'
 import setupSocket from './socket.js'
+import messagesRoutes from './routes/messagesRoutes.js'
 
 dotenv.config();
 const app = express();
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use('/api/auth',authRoutes);
 app.use('/api/contacts',contactRoutes)
+app.use('/api/messages',messagesRoutes)
 
 const server = app.listen(port, ()=>{
     console.log(`Server is running on port ${port}`)
