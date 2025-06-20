@@ -13,16 +13,36 @@ export const searchContacts = async (req, res) => {
       });
     }
 
-    // Escape regex characters and build case-insensitive pattern
-    const sanitizedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(sanitizedSearchTerm, "i");
+    const terms = searchTerm
+      .trim()
+      .split(/\s+/)
+      .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")); // escape regex characters
 
-    // Search only in firstName and lastName, exclude current user
+    // One word: match either first or last name
+    if (terms.length === 1) {
+      const regex = new RegExp(terms[0], "i");
+      const contacts = await User.find({
+        _id: { $ne: req.userId },
+        $or: [{ firstName: regex }, { lastName: regex }],
+      }).select("firstName lastName email image color");
+
+      return res.status(StatusCodes.OK).json({
+        message: "Fetched contacts successfully",
+        success: true,
+        data: contacts,
+        error: {},
+      });
+    }
+
+    // Two or more words: match first word in first name and second in last name (and vice versa)
+    const regex1 = new RegExp(terms[0], "i");
+    const regex2 = new RegExp(terms[1], "i");
+
     const contacts = await User.find({
       _id: { $ne: req.userId },
       $or: [
-        { firstName: regex },
-        { lastName: regex },
+        { $and: [{ firstName: regex1 }, { lastName: regex2 }] },
+        { $and: [{ firstName: regex2 }, { lastName: regex1 }] },
       ],
     }).select("firstName lastName email image color");
 
@@ -102,6 +122,32 @@ export const getContactsForDMList = async (req, res) => {
     });
   } catch (error) {
     console.error("Contact Search Error:", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to fetch contacts",
+      success: false,
+      data: {},
+      error: error.message,
+    });
+  }
+};
+
+
+export const getAllContacts = async (req, res) => {
+  try {
+    const users = await User.find({_id:{$ne:req.userId}},"firstName lastName _id")
+    const contacts = users.map((user) => ({
+      label: user.firstName ? `${user.firstName} ${user.lastName
+      }` : user.email,
+        value: user._id
+    }))
+    res.status(StatusCodes.OK).json({
+      message: "Fetched all contacts successfully",
+      success: true,
+      data: contacts,
+      error: {},
+    });
+  } catch (error) {
+    console.error("Contact fetch Error:", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: "Failed to fetch contacts",
       success: false,

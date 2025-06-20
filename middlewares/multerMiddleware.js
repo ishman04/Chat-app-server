@@ -6,10 +6,11 @@ const storage = multer.diskStorage({
         next(null,'uploads');
 
     },
-    filename: (req,file,next) => {
-        const ext = path.extname(file.originalname)
-        next(null, `${Date.now()}-${ext}`);
-    }
+    filename: (req, file, next) => {
+  const ext = path.extname(file.originalname);
+  next(null, `${Date.now()}${ext}`);
+}
+
 })
 
 export const uploader = multer({
