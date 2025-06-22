@@ -1,6 +1,6 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
-const channelSchema = new Mongoose.Schema({
+const channelSchema = new mongoose.Schema({
     name: {
         type:String,
         required: true
