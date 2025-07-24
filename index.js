@@ -9,7 +9,8 @@ import path from 'path'
 import setupSocket from './socket.js'
 import messagesRoutes from './routes/messagesRoutes.js'
 import channelRoutes from './routes/channelRoutes.js'
-import contactRoutes from './routes/ContactRoutes.js'
+import contactRoutes from './routes/contactRoutes.js'
+
 
 dotenv.config();
 const app = express();
