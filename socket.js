@@ -5,7 +5,7 @@ import Channel from "./schemas/channelSchema.js";
 const setupSocket = (server) => {
   const io = new SocketIOServer(server, {
     cors: {
-      origin: process.env.ORIGIN,
+      origin: true,
       methods: ["GET", "POST"],
       credentials: true,
     },
