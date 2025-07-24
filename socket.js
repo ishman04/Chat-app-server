@@ -1,4 +1,4 @@
-import { Server as SocketIOServer } from "socket.io";
+import { Server as SocketIOServer } from "socket.io"; //To setup websocket on top of http server
 import Message from "./schemas/messageSchema.js";
 import Channel from "./schemas/channelSchema.js";
 
@@ -122,3 +122,12 @@ const setupSocket = (server) => {
 };
 
 export default setupSocket;
+
+// Browser connects with socket.io → sends userId
+// → Server maps userId ↔ socketId
+
+// User sends "sendMessage" → Backend saves + emits to sender + recipient
+// User sends "sendChannelMessage" → Backend saves + emits to all channel members
+
+// When someone disconnects → Server removes their socketId
+

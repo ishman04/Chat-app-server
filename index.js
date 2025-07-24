@@ -5,10 +5,11 @@ import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 import authRoutes from './routes/authRoutes.js'
 import path from 'path'
-import contactRoutes from './routes/ContactRoutes.js'
+
 import setupSocket from './socket.js'
 import messagesRoutes from './routes/messagesRoutes.js'
 import channelRoutes from './routes/channelRoutes.js'
+import contactRoutes from './routes/ContactRoutes.js'
 
 dotenv.config();
 const app = express();
