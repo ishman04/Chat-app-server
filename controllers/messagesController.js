@@ -60,6 +60,7 @@ export const uploadFile = async (req, res) => {
       success: true,
       data: {
         filePath: req.file.path,
+        originalFilename: req.file.originalname,
         fileType: req.file.mimetype,
         fileSize: req.file.size
       }
