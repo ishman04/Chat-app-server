@@ -134,12 +134,20 @@ export const getContactsForDMList = async (req, res) => {
 
 export const getAllContacts = async (req, res) => {
   try {
-    const users = await User.find({_id:{$ne:req.userId}},"firstName lastName _id")
-    const contacts = users.map((user) => ({
-      label: user.firstName ? `${user.firstName} ${user.lastName
-      }` : user.email,
-        value: user._id
-    }))
+    // The fix is to select the 'email' field here.
+    const users = await User.find(
+      { _id: { $ne: req.userId } },
+      "firstName lastName email _id"
+    );
+
+    const contacts = users.map((user) => {
+      // This logic is now safe because user.email is guaranteed to exist.
+      const label = user.firstName
+        ? `${user.firstName} ${user.lastName || ""}`.trim()
+        : user.email;
+      return { label, value: user._id };
+    });
+
     res.status(StatusCodes.OK).json({
       message: "Fetched all contacts successfully",
       success: true,
