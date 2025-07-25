@@ -24,7 +24,7 @@ export const searchContacts = async (req, res) => {
       const contacts = await User.find({
         _id: { $ne: req.userId },
         $or: [{ firstName: regex }, { lastName: regex }],
-      }).select("firstName lastName email image color");
+      }).select("firstName lastName email image color _id");
 
       return res.status(StatusCodes.OK).json({
         message: "Fetched contacts successfully",
