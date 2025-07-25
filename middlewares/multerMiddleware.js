@@ -22,11 +22,10 @@ const fileStorage = new CloudinaryStorage({
   const fileExt = file.originalname.split('.').pop().toLowerCase();
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
   const videoExtensions = ['mp4', 'mov', 'avi', 'mkv'];
-  const rawExtensions = ['pdf', 'zip', 'docx', 'xlsx', 'mp3', 'wav'];
 
   let resource_type = 'raw'; // default to raw
   let folder = 'chat-app-files';
-  let allowed_formats = rawExtensions;
+  let allowed_formats = null;
 
   if (imageExtensions.includes(fileExt)) {
     resource_type = 'image';
@@ -41,7 +40,6 @@ const fileStorage = new CloudinaryStorage({
   return {
     folder,
     resource_type,
-    allowed_formats,
     public_id: `file_${Date.now()}`,
     chunk_size: 6000000,
   };
