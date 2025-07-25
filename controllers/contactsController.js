@@ -147,7 +147,6 @@ export const getAllContacts = async (req, res) => {
         : user.email;
       return { label, value: user._id };
     });
-
     res.status(StatusCodes.OK).json({
       message: "Fetched all contacts successfully",
       success: true,
