@@ -4,6 +4,7 @@ import StatusCodes from 'http-status-codes'
 import User from '../schemas/userSchema.js';
 import { compare } from 'bcrypt';
 import fs from 'fs/promises'
+import { v2 as cloudinary } from 'cloudinary'
 
 
 const maxAge = 3*24*60*60*1000
@@ -255,45 +256,49 @@ export const addProfileImage = async (req, res) => {
     }
 };
 
-export const removeProfileImage = async (req,res) => {
-    try {
-        const {userId} = req;
-        const user = await User.findById(userId)
-        if(user.image){
-            await fs.unlink(process.cwd()+'/'+user.image);
-            user.image = null;
-            await user.save();
-        }
-        return res
-                .status(StatusCodes.OK)
-                .json({
-                    message: 'Profile photo deleted successfully',
-                    success: true,
-                    data: {
-                        id: user.id,
-                        email: user.email,
-                        profileSetup: user.profileSetup,
-                        firstName: user.firstName,
-                        lastName: user.lastName,
-                        image: user.image,
-                        color: user.color
 
-                    },
-                    error: {}
-                })
-        
-    } catch (error) {
-        console.log(error);
-        return res
-                .status(StatusCodes.INTERNAL_SERVER_ERROR)
-                .json({
-                    message: 'Failed to delete profile photo',
-                    success: false,
-                    data: {},
-                    error: error.message
-                })
+
+export const removeProfileImage = async (req, res) => {
+  try {
+    const { userId } = req;
+    const user = await User.findById(userId);
+    
+    if (user.image) {
+      // Extract public_id from URL (assumes Cloudinary URLs)
+      const publicId = user.image
+        .split('/')
+        .slice(-1)[0]
+        .split('.')[0]; // remove file extension
+      
+      await cloudinary.uploader.destroy(`chat-app-profiles/${publicId}`);
+      user.image = null;
+      await user.save();
     }
-}
+
+    return res.status(StatusCodes.OK).json({
+      message: 'Profile photo deleted successfully',
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        profileSetup: user.profileSetup,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        image: user.image,
+        color: user.color,
+      },
+      error: {}
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: 'Failed to delete profile photo',
+      success: false,
+      data: {},
+      error: error.message
+    });
+  }
+};
 
 export const logout = async(req,res) => {
     try {

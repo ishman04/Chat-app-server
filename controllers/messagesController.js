@@ -39,25 +39,37 @@ export const getMessages = async (req, res) => {
 
 export const uploadFile = async (req, res) => {
   try {
-    const imagePath = req.file?.path;
-
-    if (!imagePath) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'No file uploaded' });
+    console.log("this is the file:",req.file)
+    if (!req.file) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ 
+        message: 'No file uploaded',
+        success: false
+      });
     }
-    return res
-            .status(StatusCodes.OK)
-            .json({ message: 'Profile image updated successfully',
-                success: true,
-                data: {
-                  filePath: imagePath
-                }
-            })
+    console.log('Uploaded file:', req.file); // Log file details
+    // Check if file was successfully uploaded to Cloudinary
+    if (!req.file.path) {
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        message: 'File upload failed',
+        success: false
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({ 
+      message: 'File uploaded successfully',
+      success: true,
+      data: {
+        filePath: req.file.path,
+        fileType: req.file.mimetype,
+        fileSize: req.file.size
+      }
+    });
+    
   } catch (error) {
-    console.error("File send error: ", error);
+    console.error("File upload error: ", error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: "Failed to send file",
+      message: "Failed to upload file",
       success: false,
-      data: {},
       error: error.message,
     });
   }

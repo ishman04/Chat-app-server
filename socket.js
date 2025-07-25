@@ -2,6 +2,8 @@ import { Server as SocketIOServer } from "socket.io"; //To setup websocket on to
 import Message from "./schemas/messageSchema.js";
 import Channel from "./schemas/channelSchema.js";
 
+
+console.log("--- SOCKET HANDLER V3 - LATEST VERSION LOADED ---");
 const setupSocket = (server) => {
   const io = new SocketIOServer(server, {
     cors: {
