@@ -35,14 +35,21 @@ const fileStorage = new CloudinaryStorage({
     resource_type = 'video';
     folder = 'chat-app-videos';
     allowed_formats = videoExtensions;
+    
   }
+   const params = {
+      folder,
+      resource_type,
+      public_id: `file_${Date.now()}`,
+      chunk_size: 6000000,
+    };
 
-  return {
-    folder,
-    resource_type,
-    public_id: `file_${Date.now()}`,
-    chunk_size: 6000000,
-  };
+    if (allowed_formats) {
+      params.allowed_formats = allowed_formats;
+    }
+
+    return params;
+
 },
 });
 export const fileUploader = multer({ storage: fileStorage });
