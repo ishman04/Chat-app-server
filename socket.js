@@ -54,7 +54,7 @@ const setupSocket = (server) => {
 
   // 📢 Channel message handler
   const sendChannelMessage = async (message) => {
-    const { channelId, sender, content, messageType, fileUrl } = message;
+    const { channelId, sender, content, messageType, fileUrl,originalFilename } = message;
 
     try {
       const createdMessage = await Message.create({
@@ -64,6 +64,7 @@ const setupSocket = (server) => {
         messageType,
         timestamp: new Date(),
         fileUrl,
+        originalFilename
       });
 
       const messageData = await Message.findById(createdMessage._id).populate(
@@ -78,22 +79,23 @@ const setupSocket = (server) => {
 
       const channel = await Channel.findById(channelId).populate("members").populate("admin");
 
-      const finalData = { ...messageData._doc, channelId: channel._id };
+      if (channel && channel._id) {
+        const finalData = { ...messageData._doc, channelId: channel._id };
 
-      if (channel && channel.members) {
-        const emittedTo = new Set();
+        if (channel.members) {
+          const emittedTo = new Set();
+          channel.members.forEach((member) => {
+            const socketId = userSocketMap.get(member._id?.toString());
+            if (socketId && !emittedTo.has(socketId)) {
+              io.to(socketId).emit("receive-channel-message", finalData);
+              emittedTo.add(socketId);
+            }
+          });
 
-        channel.members.forEach((member) => {
-          const socketId = userSocketMap.get(member._id?.toString());
-          if (socketId && !emittedTo.has(socketId)) {
-            io.to(socketId).emit("receive-channel-message", finalData);
-            emittedTo.add(socketId);
+          const adminSocketId = userSocketMap.get(channel.admin?._id?.toString());
+          if (adminSocketId && !emittedTo.has(adminSocketId)) {
+            io.to(adminSocketId).emit("receive-channel-message", finalData);
           }
-        });
-
-        const adminSocketId = userSocketMap.get(channel.admin?._id?.toString());
-        if (adminSocketId && !emittedTo.has(adminSocketId)) {
-          io.to(adminSocketId).emit("receive-channel-message", finalData);
         }
       }
     } catch (err) {
