@@ -2,9 +2,9 @@ import jwt from 'jsonwebtoken'
 
 import StatusCodes from 'http-status-codes'
 import User from '../schemas/userSchema.js';
-import { compare } from 'bcrypt';
 import fs from 'fs/promises'
 import { v2 as cloudinary } from 'cloudinary'
+import bcrypt from 'bcrypt'
 
 
 const maxAge = 3*24*60*60*1000
@@ -72,7 +72,7 @@ export const login = async (req,res,next) => {
                         error: {}
                     })
         }
-        const auth = await compare(password,user.password)
+        const auth = await bcrypt.compare(password,user.password)
         if(!auth){
             return res
                     .status(StatusCodes.BAD_REQUEST)
