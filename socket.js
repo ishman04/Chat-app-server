@@ -14,7 +14,7 @@ console.log("--- SOCKET HANDLER V3 - LATEST VERSION LOADED ---");
 const setupSocket = (server) => {
   io = new SocketIOServer(server, {
     cors: {
-      origin: true,
+      origin: 'https://chat-app-client-kohl.vercel.app/',
       methods: ["GET", "POST"],
       credentials: true,
     },
