@@ -3,10 +3,16 @@ import Message from "./schemas/messageSchema.js";
 import Channel from "./schemas/channelSchema.js";
 import User from "./schemas/userSchema.js";
 
-
+let io;
+export const getIO = () => { 
+    if (!io) {
+        throw new Error("Socket.IO not initialized!");
+    }
+    return io;
+};
 console.log("--- SOCKET HANDLER V3 - LATEST VERSION LOADED ---");
 const setupSocket = (server) => {
-  const io = new SocketIOServer(server, {
+  io = new SocketIOServer(server, {
     cors: {
       origin: true,
       methods: ["GET", "POST"],
@@ -14,11 +20,11 @@ const setupSocket = (server) => {
     },
   });
 
-  const userSocketMap = new Map(); // userId -> socketId
+  io.userSocketMap = new Map(); // userId -> socketId
 
   const handleTyping = async(socket,data) => {
     const {recipient, channelId, isChannel} = data;
-    const senderId = [...userSocketMap.entries()].find(([_,id]) => id === socket.id)?.[0];
+    const senderId = [...io.userSocketMap.entries()].find(([_,id]) => id === socket.id)?.[0];
     if(!senderId) return;
     const sender = await User.findById(senderId).select("firstName email");
     if (!sender) return;
@@ -29,7 +35,7 @@ const setupSocket = (server) => {
       payload.channelId = channelId;
       socket.to(channelId).emit("typing",payload);
     } else{
-      const recipientSocketId = userSocketMap.get(recipient);
+      const recipientSocketId = io.userSocketMap.get(recipient);
       if(recipientSocketId) {
         io.to(recipientSocketId).emit("typing", payload);
       }
@@ -38,14 +44,14 @@ const setupSocket = (server) => {
 
   const handleStopTyping = (socket,data) => {
     const { recipient, channelId, isChannel } = data;
-    const senderId = [...userSocketMap.entries()].find(([_, id]) => id === socket.id)?.[0];
+    const senderId = [...io.userSocketMap.entries()].find(([_, id]) => id === socket.id)?.[0];
     if (!senderId) return;
 
     const payload = { senderId, isChannel, channelId };
     if (isChannel) {
         socket.to(channelId).emit("stop-typing", payload);
     } else {
-        const recipientSocketId = userSocketMap.get(recipient);
+        const recipientSocketId = io.userSocketMap.get(recipient);
         if (recipientSocketId) {
             io.to(recipientSocketId).emit("stop-typing", payload);
         }
@@ -54,9 +60,9 @@ const setupSocket = (server) => {
   // 🔌 Disconnect handler
   const disconnect = (socket) => {
     console.log(`Client disconnected: ${socket.id}`);
-    for (const [userId, socketId] of userSocketMap.entries()) {
+    for (const [userId, socketId] of io.userSocketMap.entries()) {
       if (socketId === socket.id) {
-        userSocketMap.delete(userId);
+        io.userSocketMap.delete(userId);
         break;
       }
     }
@@ -65,8 +71,8 @@ const setupSocket = (server) => {
   // 💬 DM message handler
   const sendMessage = async (message) => {
     const { sender, recipient } = message;
-    const senderSocketId = userSocketMap.get(sender);
-    const recipientSocketId = userSocketMap.get(recipient);
+    const senderSocketId = io.userSocketMap.get(sender);
+    const recipientSocketId = io.userSocketMap.get(recipient);
 
     try {
       console.log("🛠️ Creating message:", message);
@@ -121,14 +127,14 @@ const setupSocket = (server) => {
         if (channel.members) {
           const emittedTo = new Set();
           channel.members.forEach((member) => {
-            const socketId = userSocketMap.get(member._id?.toString());
+            const socketId = io.userSocketMap.get(member._id?.toString());
             if (socketId && !emittedTo.has(socketId)) {
               io.to(socketId).emit("receive-channel-message", finalData);
               emittedTo.add(socketId);
             }
           });
 
-          const adminSocketId = userSocketMap.get(channel.admin?._id?.toString());
+          const adminSocketId = io.userSocketMap.get(channel.admin?._id?.toString());
           if (adminSocketId && !emittedTo.has(adminSocketId)) {
             io.to(adminSocketId).emit("receive-channel-message", finalData);
           }
@@ -144,7 +150,7 @@ const setupSocket = (server) => {
     const userId = socket.handshake.query.userId;
 
     if (userId) {
-      userSocketMap.set(userId, socket.id);
+      io.userSocketMap.set(userId, socket.id);
       console.log(`✅ User ${userId} connected with socket ID ${socket.id}`);
       try {
         const userChannels = await Channel.find({members: userId});
