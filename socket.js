@@ -1,6 +1,7 @@
 import { Server as SocketIOServer } from "socket.io"; //To setup websocket on top of http server
 import Message from "./schemas/messageSchema.js";
 import Channel from "./schemas/channelSchema.js";
+import User from "./schemas/userSchema.js";
 
 
 console.log("--- SOCKET HANDLER V3 - LATEST VERSION LOADED ---");
@@ -15,6 +16,41 @@ const setupSocket = (server) => {
 
   const userSocketMap = new Map(); // userId -> socketId
 
+  const handleTyping = async(socket,data) => {
+    const {recipient, channelId, isChannel} = data;
+    const senderId = [...userSocketMap.entries()].find(([_,id]) => id === socket.id)?.[0];
+    if(!senderId) return;
+    const sender = await User.findById(senderId).select("firstName email");
+    if (!sender) return;
+    const senderName = sender.firstName || sender.email;
+    const payload = { senderId, senderName, isChannel }; 
+
+    if(isChannel){
+      payload.channelId = channelId;
+      socket.to(channelId).emit("typing",payload);
+    } else{
+      const recipientSocketId = userSocketMap.get(recipient);
+      if(recipientSocketId) {
+        io.to(recipientSocketId).emit("typing", payload);
+      }
+    }
+  }
+
+  const handleStopTyping = (socket,data) => {
+    const { recipient, channelId, isChannel } = data;
+    const senderId = [...userSocketMap.entries()].find(([_, id]) => id === socket.id)?.[0];
+    if (!senderId) return;
+
+    const payload = { senderId, isChannel, channelId };
+    if (isChannel) {
+        socket.to(channelId).emit("stop-typing", payload);
+    } else {
+        const recipientSocketId = userSocketMap.get(recipient);
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit("stop-typing", payload);
+        }
+    }
+  }
   // 🔌 Disconnect handler
   const disconnect = (socket) => {
     console.log(`Client disconnected: ${socket.id}`);
@@ -104,15 +140,27 @@ const setupSocket = (server) => {
   };
 
   // 🔗 When a user connects
-  io.on("connection", (socket) => {
+  io.on("connection", async(socket) => {
     const userId = socket.handshake.query.userId;
 
     if (userId) {
       userSocketMap.set(userId, socket.id);
       console.log(`✅ User ${userId} connected with socket ID ${socket.id}`);
+      try {
+        const userChannels = await Channel.find({members: userId});
+        userChannels.forEach(channel => {
+          socket.join(channel._id.toString());
+          console.log(`User ${userId} joined channel room ${channel._id.toString()}`);
+        })
+      } catch (error) {
+        console.error('Error fetching and joining channels:', error);
+      }
     } else {
       console.warn("⚠️ No user ID provided in handshake.");
     }
+
+    socket.on("typing",(data) =>handleTyping(socket,data));
+    socket.on("stop-typing", (data) => handleStopTyping(socket, data));
 
     // Listen for direct message events
     socket.on("sendMessage", sendMessage);
