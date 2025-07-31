@@ -10,7 +10,6 @@ export const getIO = () => {
     }
     return io;
 };
-console.log("--- SOCKET HANDLER V3 - LATEST VERSION LOADED ---");
 const setupSocket = (server) => {
   io = new SocketIOServer(server, {
     cors: {
@@ -42,21 +41,24 @@ const setupSocket = (server) => {
     }
   }
 
-  const handleStopTyping = (socket,data) => {
+
+const handleStopTyping = (socket, data) => {
     const { recipient, channelId, isChannel } = data;
     const senderId = [...io.userSocketMap.entries()].find(([_, id]) => id === socket.id)?.[0];
     if (!senderId) return;
-
-    const payload = { senderId, isChannel, channelId };
+  
     if (isChannel) {
-        socket.to(channelId).emit("stop-typing", payload);
+      // For channels, broadcast to the channel room with channel-specific data
+      socket.to(channelId).emit("stop-typing", { senderId, channelId, isChannel });
     } else {
-        const recipientSocketId = io.userSocketMap.get(recipient);
-        if (recipientSocketId) {
-            io.to(recipientSocketId).emit("stop-typing", payload);
-        }
+      // For 1-to-1 chats, emit directly to the specific recipient
+      const recipientSocketId = io.userSocketMap.get(recipient);
+      if (recipientSocketId) {
+        // The payload only needs the senderId and the isChannel flag
+        io.to(recipientSocketId).emit("stop-typing", { senderId, isChannel });
+      }
     }
-  }
+};
   // 🔌 Disconnect handler
   const disconnect = (socket) => {
     console.log(`Client disconnected: ${socket.id}`);
@@ -75,14 +77,12 @@ const setupSocket = (server) => {
     const recipientSocketId = io.userSocketMap.get(recipient);
 
     try {
-      console.log("🛠️ Creating message:", message);
       const createdMessage = await Message.create(message);
 
       const messageData = await Message.findById(createdMessage._id)
         .populate("sender", "id email firstName lastName image color")
         .populate("recipient", "id email firstName lastName image color");
 
-      console.log("📨 Emitting message to sender and recipient");
       if (recipientSocketId) {
         io.to(recipientSocketId).emit("receiveMessage", messageData);
       }
@@ -162,7 +162,7 @@ const setupSocket = (server) => {
         console.error('Error fetching and joining channels:', error);
       }
     } else {
-      console.warn("⚠️ No user ID provided in handshake.");
+      console.warn("⚠️ No user ID provided in handshake");
     }
 
     socket.on("typing",(data) =>handleTyping(socket,data));
