@@ -19,7 +19,7 @@ export const getMessages = async (req, res) => {
             {sender:user1,recipient:user2},
             {sender:user2,recipient:user1}
         ],
-    }).sort({timestamp: 1});
+    }).sort({timestamp: 1}).populate('readBy', 'firstName _id');
 
     res.status(StatusCodes.OK).json({
       message: "Fetched messages successfully",

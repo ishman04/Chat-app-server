@@ -132,15 +132,14 @@ export const removeMemberFromChannel = async (req, res) => {
     }
 };
 
-
-
 export const getChannelMessages = async (req, res) => {
   try {
     const {channelId} = req.params;
-    const channel = await Channel.findById(channelId).populate({path: "messages",populate:{
+    const channel = await Channel.findById(channelId).populate({path: "messages",populate:[{
       path: "sender",
       select: "firstName lastName email _id image color"
-    }
+    },
+    {path: "readBy", select: "firstName _id image color"}]
   })
   if(!channel){
     return res.status(StatusCodes.NOT_FOUND).json({

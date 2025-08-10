@@ -22,6 +22,69 @@ const setupSocket = (server) => {
 
   io.userSocketMap = new Map(); // userId -> socketId
 
+  const handleMarkAsRead = async (socket, data) => {
+    try {
+      const { userId, chatId, isChannel } = data;
+
+      // Find all messages in the chat that have not yet been read by this user.
+      const messagesToUpdate = await Message.find({
+        ...(isChannel 
+          ? { _id: { $in: (await Channel.findById(chatId))?.messages || [] } } 
+          : { $or: [{ sender: chatId, recipient: userId }, { sender: userId, recipient: chatId }] }),
+        readBy: { $ne: userId } // Important: Only get messages not already in the user's readBy array
+      });
+
+      const messageIdsToUpdate = messagesToUpdate.map(msg => msg._id);
+
+      // If there's nothing to update, exit early.
+      if (messageIdsToUpdate.length === 0) return;
+
+      // Add the user's ID to the readBy array for all relevant messages.
+      await Message.updateMany(
+        { _id: { $in: messageIdsToUpdate } },
+        { $addToSet: { readBy: userId } } // Use $addToSet to prevent duplicates
+      );
+
+      // Get the newly updated messages to send back to the clients.
+      const updatedMessages = await Message.find({ _id: { $in: messageIdsToUpdate } })
+        .populate('readBy', 'firstName _id image color');
+
+      // --- THE FIX IS HERE ---
+      if (isChannel) {
+        // For channels, the logic is simple: broadcast to the whole channel room.
+        io.to(chatId).emit("messages-read", { chatId, messages: updatedMessages });
+      } else {
+        // For DMs, we need to notify both users with the correct context.
+        const readerId = userId;      // e.g., User B (who just read the message)
+        const otherUserId = chatId;   // e.g., User A (the original sender)
+
+        const readerSocketId = io.userSocketMap.get(readerId);
+        const otherUserSocketId = io.userSocketMap.get(otherUserId);
+
+        // 1. Notify the original sender (User A) that their message was read.
+        //    The chatId here MUST be the ID of the person who read it (User B).
+        if (otherUserSocketId) {
+          io.to(otherUserSocketId).emit("messages-read", { 
+            chatId: readerId, // <-- The ID of the person they are chatting with
+            messages: updatedMessages 
+          });
+        }
+
+        // 2. Also notify the reader (User B) to update their own UI.
+        //    The chatId here MUST be the ID of the person they are chatting with (User A).
+        if (readerSocketId) {
+          io.to(readerSocketId).emit("messages-read", { 
+            chatId: otherUserId,
+            messages: updatedMessages 
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Mark as read error:", error);
+    }
+  };
+
+
   const handleTyping = async(socket,data) => {
     const {recipient, channelId, isChannel} = data;
     const senderId = [...io.userSocketMap.entries()].find(([_,id]) => id === socket.id)?.[0];
@@ -165,6 +228,8 @@ const handleStopTyping = (socket, data) => {
     } else {
       console.warn("⚠️ No user ID provided in handshake");
     }
+
+    socket.on("mark-as-read", (data) => handleMarkAsRead(socket, data));
 
     socket.on("typing",(data) =>handleTyping(socket,data));
     socket.on("stop-typing", (data) => handleStopTyping(socket, data));
