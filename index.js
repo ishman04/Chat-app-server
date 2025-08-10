@@ -18,7 +18,8 @@ const port = process.env.PORT || 3001;
 const databaseURL = process.env.DATABASE_URL
 
 app.use(cors({
-    origin:'https://chat-app-client-kohl.vercel.app',
+    // origin:'https://chat-app-client-kohl.vercel.app',
+    origin: true,
     methods: ['GET','POST','PUT','PATCH','DELETE'],
     credentials: true
 }))

@@ -13,7 +13,8 @@ export const getIO = () => {
 const setupSocket = (server) => {
   io = new SocketIOServer(server, {
     cors: {
-      origin: 'https://chat-app-client-kohl.vercel.app',
+      // origin: 'https://chat-app-client-kohl.vercel.app',
+      origin: true,
       methods: ["GET", "POST"],
       credentials: true,
     },
