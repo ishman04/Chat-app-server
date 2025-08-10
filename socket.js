@@ -136,12 +136,20 @@ const handleStopTyping = (socket, data) => {
 
   // 💬 DM message handler
   const sendMessage = async (message) => {
-    const { sender, recipient } = message;
+    const { sender, recipient, content, messageType,fileUrl,originalFilename } = message;
     const senderSocketId = io.userSocketMap.get(sender);
     const recipientSocketId = io.userSocketMap.get(recipient);
 
     try {
-      const createdMessage = await Message.create(message);
+      const createdMessage = await Message.create({
+        sender,
+        recipient,
+        content,
+        messageType,
+        timestamp: new Date(),
+        fileUrl,
+        originalFilename
+      });
 
       const messageData = await Message.findById(createdMessage._id)
         .populate("sender", "id email firstName lastName image color")
