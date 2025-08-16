@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 import authRoutes from './routes/authRoutes.js'
 import path from 'path'
+import chatbotRoutes from './routes/chatbotRoutes.js';
 
 import setupSocket from './socket.js'
 import messagesRoutes from './routes/messagesRoutes.js'
@@ -34,6 +35,7 @@ app.use('/api/auth',authRoutes);
 app.use('/api/contacts',contactRoutes)
 app.use('/api/messages',messagesRoutes)
 app.use('/api/channels',channelRoutes)
+app.use('/api/chatbot', chatbotRoutes);
 
 const server = app.listen(port, ()=>{
     console.log(`Server is running on port ${port}`)

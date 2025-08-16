@@ -2,6 +2,7 @@ import { Server as SocketIOServer } from "socket.io"; //To setup websocket on to
 import Message from "./schemas/messageSchema.js";
 import Channel from "./schemas/channelSchema.js";
 import User from "./schemas/userSchema.js";
+import { chatbotUser } from "./controllers/chatbotController.js";
 
 let io;
 export const getIO = () => { 
@@ -27,6 +28,9 @@ const setupSocket = (server) => {
       const { userId, chatId, isChannel } = data;
 
       // Find all messages in the chat that have not yet been read by this user.
+      if (!isChannel && chatId === chatbotUser._id) {
+                return; 
+            }
       const messagesToUpdate = await Message.find({
         ...(isChannel 
           ? { _id: { $in: (await Channel.findById(chatId))?.messages || [] } } 
